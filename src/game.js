@@ -182,7 +182,10 @@ export default class Game {
         selectedHexagon
       );
 
-      let hexagonToTurnAlreadyHasParent = hexagonToTurnToRiver.parent;
+      let hexagonToTurnHasSameParent = this.constraintChecker.checkIfBothHaveSameParent(
+        selectedHexagon,
+        hexagonToTurnToRiver
+      );
 
       /*
       console.log("elevationOk: " + elevationForNewHexIsLessThanCurrentHexagon);
@@ -197,7 +200,7 @@ export default class Game {
         elevationForNewHexIsLessThanCurrentHexagon &&
         fountainHasPower &&
         !hasAlreadyRiver &&
-        !hexagonToTurnAlreadyHasParent &&
+        !hexagonToTurnHasSameParent &&
         selectedFieldToSpawnIsNeighbour
       ) {
         if (selectedHexagon.type === FIELDTYPE.MOUNTAIN) {
@@ -213,11 +216,13 @@ export default class Game {
             hexagonToTurnToRiver.type = FIELDTYPE.HILL_RIVER_MERGE;
             break;
           case FIELDTYPE.RIVER:
+          case FIELDTYPE.LAKE:
             hexagonToTurnToRiver.type = FIELDTYPE.MERGED_RIVER;
             break;
           case FIELDTYPE.HILL:
             hexagonToTurnToRiver.type = FIELDTYPE.HILL_RIVER;
             break;
+
           default:
             break;
         }

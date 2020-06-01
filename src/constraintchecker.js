@@ -5,6 +5,38 @@ export default class ConstraintChecker {
     this.game = game;
   }
 
+  checkIfBothHaveSameParent(selectedHexagon, fieldToChange) {
+    let selectedHexagonParents = [];
+    let fieldToChangeParents = [];
+
+    let cursor = selectedHexagon;
+    while (cursor.parent) {
+      selectedHexagonParents.push(cursor.parent);
+      cursor = cursor.parent;
+    }
+    console.log(selectedHexagonParents);
+
+    cursor = fieldToChange;
+    while (cursor.parent) {
+      fieldToChangeParents.push(cursor.parent);
+      cursor = cursor.parent;
+    }
+    console.log(fieldToChangeParents);
+
+    const found =
+      selectedHexagonParents.some(value =>
+        fieldToChangeParents.includes(value)
+      ) ||
+      fieldToChangeParents.some(value =>
+        selectedHexagonParents.includes(value)
+      );
+
+    if (found) {
+      return true;
+    }
+    return false;
+  }
+
   checkElevationForNextRiverField(selectedHexagon, fieldToChange) {
     if (fieldToChange.type === FIELDTYPE.FOUNTAIN) {
       return false;
