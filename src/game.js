@@ -2,6 +2,7 @@ import Hexagon from "./hexagon";
 import { FIELDTYPE, HEXAGON_SIZE } from "./hexagon";
 import InputHandler from "./input";
 import Civilization from "./civilization";
+import ConstraintChecker from "./constraintchecker";
 
 export const GAME_STATE = {
   SELECT_MODE: 0,
@@ -25,6 +26,8 @@ export default class Game {
     this.initHexagons();
     this.determineNeighbours();
 
+    this.constraintChecker = new ConstraintChecker();
+
     new InputHandler(this);
   }
 
@@ -43,7 +46,13 @@ export default class Game {
       let keys = Object.keys(FIELDTYPE);
       keys = keys.filter(
         entry =>
-          entry !== "WATER" && entry !== "RIVER" && entry !== "MERGED_RIVER"
+          entry !== "WATER" &&
+          entry !== "RIVER" &&
+          entry !== "MERGED_RIVER" &&
+          entry !== "FOUNTAIN" &&
+          entry !== "LAKE" &&
+          entry !== "HILL_RIVER" &&
+          entry !== "HILL_LAKE"
       );
 
       keys.push("GREEN"); // add one more green to bias the random towards green
@@ -103,6 +112,7 @@ export default class Game {
     this.hexagons.forEach(hex => {
       hex.update(deltaTime);
 
+      /*
       let populationSum = hex.population;
       hex.neighbours.forEach(
         neighbour => (populationSum += neighbour.population)
@@ -119,6 +129,7 @@ export default class Game {
           );
         }
       }
+      */
     });
   }
 
@@ -133,7 +144,9 @@ export default class Game {
     if (!selectedHexagon) return;
     if (
       selectedHexagon.type === FIELDTYPE.MOUNTAIN ||
-      selectedHexagon.type === FIELDTYPE.RIVER
+      selectedHexagon.type === FIELDTYPE.RIVER ||
+      selectedHexagon.type === FIELDTYPE.MERGED_RIVER ||
+      selectedHexagon.type === FIELDTYPE.HILL_RIVER
     ) {
       this.gamestate = GAME_STATE.SPAWN_RIVER_MODE;
     }
@@ -153,72 +166,69 @@ export default class Game {
       let selectedFieldToSpawnIsNeighbour = selectedHexagon.neighbours.includes(
         hexagonToTurnToRiver
       );
-      let hasAlreadyRiverAndIsAMountain =
-        selectedHexagon.type === FIELDTYPE.MOUNTAIN &&
-        selectedHexagon.neighbours.filter(hex => hex.type === FIELDTYPE.RIVER)
-          .length > 0;
 
-      let selectedHexagonIsAlreadyParentOfAnother =
+      let hasAlreadyRiver =
+        selectedHexagon.type === FIELDTYPE.MOUNTAIN &&
         this.hexagons.filter(hex => hex.parent === selectedHexagon).length > 0;
 
-      let fountainDistance = 0;
-      let cursor = selectedHexagon;
-      while (cursor.parent) {
-        fountainDistance++;
-        cursor = cursor.parent;
-      }
-
-      let elevationForNewHexIsLessThanCurrentHexagon = this.checkElevationForNextRiverField(
+      let elevationForNewHexIsLessThanCurrentHexagon = this.constraintChecker.checkElevationForNextRiverField(
         selectedHexagon,
         hexagonToTurnToRiver
       );
 
-      let fountainHasPower = fountainDistance < 3;
+      console.log("so far...");
+
+      let fountainHasPower = this.constraintChecker.fountainPowerCheck(
+        selectedHexagon
+      );
+
+      console.log("elevationOk: " + elevationForNewHexIsLessThanCurrentHexagon);
+      console.log("fountain has power: " + fountainHasPower);
+      console.log("!hasAlreadyRiver: " + !hasAlreadyRiver);
+      console.log(
+        "selectedFieldToSpawnIsNeighbour: " + selectedFieldToSpawnIsNeighbour
+      );
 
       if (
         elevationForNewHexIsLessThanCurrentHexagon &&
         fountainHasPower &&
-        !hasAlreadyRiverAndIsAMountain &&
-        selectedFieldToSpawnIsNeighbour &&
-        !selectedHexagonIsAlreadyParentOfAnother
+        !hasAlreadyRiver &&
+        selectedFieldToSpawnIsNeighbour
       ) {
+        if (selectedHexagon.type === FIELDTYPE.MOUNTAIN) {
+          selectedHexagon.type = FIELDTYPE.FOUNTAIN;
+          selectedHexagon.initImage();
+        }
+
         if (hexagonToTurnToRiver.type === FIELDTYPE.RIVER) {
           hexagonToTurnToRiver.type = FIELDTYPE.MERGED_RIVER;
+        } else if (hexagonToTurnToRiver.type === FIELDTYPE.HILL) {
+          hexagonToTurnToRiver.type = FIELDTYPE.HILL_RIVER;
         } else {
           hexagonToTurnToRiver.type = FIELDTYPE.RIVER;
         }
+
         hexagonToTurnToRiver.parent = selectedHexagon;
-        hexagonToTurnToRiver.initImage();
+
+        let parentCount = 0;
+        let cursor = hexagonToTurnToRiver;
+        while (cursor.parent) {
+          cursor = cursor.parent;
+          parentCount++;
+        }
+        if (parentCount >= 3) {
+          if (hexagonToTurnToRiver.type === FIELDTYPE.RIVER) {
+            hexagonToTurnToRiver.type = FIELDTYPE.LAKE;
+          }
+          if (hexagonToTurnToRiver.type === FIELDTYPE.HILL_RIVER) {
+            hexagonToTurnToRiver.type = FIELDTYPE.HILL_LAKE;
+          }
+        }
       }
+
+      hexagonToTurnToRiver.initImage();
+
       this.gamestate = GAME_STATE.SELECT_MODE;
-    }
-  }
-
-  checkElevationForNextRiverField(
-    selectedHexagon,
-    selectedFieldToSpawnIsNeighbour
-  ) {
-    console.log("selectedHexagon === ", selectedHexagon.type);
-    console.log(
-      "selectedFieldToTurn === ",
-      selectedFieldToSpawnIsNeighbour.type
-    );
-
-    switch (selectedHexagon.type) {
-      case FIELDTYPE.MOUNTAIN:
-        return true;
-      case FIELDTYPE.HILL:
-        return selectedFieldToSpawnIsNeighbour.type !== FIELDTYPE.MOUNTAIN;
-      case FIELDTYPE.GREEN:
-      case FIELDTYPE.RIVER:
-      case FIELDTYPE.MERGED_RIVER:
-      case FIELDTYPE.WATER:
-        return (
-          selectedFieldToSpawnIsNeighbour.type !== FIELDTYPE.MOUNTAIN &&
-          selectedFieldToSpawnIsNeighbour.type !== FIELDTYPE.HILL
-        );
-      default:
-        return false;
     }
   }
 }
