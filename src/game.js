@@ -26,7 +26,7 @@ export default class Game {
     this.initHexagons();
     this.determineNeighbours();
 
-    this.constraintChecker = new ConstraintChecker();
+    this.constraintChecker = new ConstraintChecker(this);
 
     new InputHandler(this);
   }
@@ -52,7 +52,8 @@ export default class Game {
           entry !== "FOUNTAIN" &&
           entry !== "LAKE" &&
           entry !== "HILL_RIVER" &&
-          entry !== "HILL_LAKE"
+          entry !== "HILL_LAKE" &&
+          entry !== "HILL_RIVER_MERGE"
       );
 
       keys.push("GREEN"); // add one more green to bias the random towards green
@@ -146,7 +147,8 @@ export default class Game {
       selectedHexagon.type === FIELDTYPE.MOUNTAIN ||
       selectedHexagon.type === FIELDTYPE.RIVER ||
       selectedHexagon.type === FIELDTYPE.MERGED_RIVER ||
-      selectedHexagon.type === FIELDTYPE.HILL_RIVER
+      selectedHexagon.type === FIELDTYPE.HILL_RIVER ||
+      selectedHexagon.type === FIELDTYPE.HILL_RIVER_MERGE
     ) {
       this.gamestate = GAME_STATE.SPAWN_RIVER_MODE;
     }
@@ -176,23 +178,26 @@ export default class Game {
         hexagonToTurnToRiver
       );
 
-      console.log("so far...");
-
       let fountainHasPower = this.constraintChecker.fountainPowerCheck(
         selectedHexagon
       );
 
+      let hexagonToTurnAlreadyHasParent = hexagonToTurnToRiver.parent;
+
+      /*
       console.log("elevationOk: " + elevationForNewHexIsLessThanCurrentHexagon);
       console.log("fountain has power: " + fountainHasPower);
       console.log("!hasAlreadyRiver: " + !hasAlreadyRiver);
       console.log(
         "selectedFieldToSpawnIsNeighbour: " + selectedFieldToSpawnIsNeighbour
       );
+      */
 
       if (
         elevationForNewHexIsLessThanCurrentHexagon &&
         fountainHasPower &&
         !hasAlreadyRiver &&
+        !hexagonToTurnAlreadyHasParent &&
         selectedFieldToSpawnIsNeighbour
       ) {
         if (selectedHexagon.type === FIELDTYPE.MOUNTAIN) {
@@ -200,15 +205,25 @@ export default class Game {
           selectedHexagon.initImage();
         }
 
-        if (hexagonToTurnToRiver.type === FIELDTYPE.RIVER) {
-          hexagonToTurnToRiver.type = FIELDTYPE.MERGED_RIVER;
-        } else if (hexagonToTurnToRiver.type === FIELDTYPE.HILL) {
-          hexagonToTurnToRiver.type = FIELDTYPE.HILL_RIVER;
-        } else {
-          hexagonToTurnToRiver.type = FIELDTYPE.RIVER;
+        switch (hexagonToTurnToRiver.type) {
+          case FIELDTYPE.GREEN:
+            hexagonToTurnToRiver.type = FIELDTYPE.RIVER;
+            break;
+          case FIELDTYPE.HILL_RIVER || FIELDTYPE.HILL_LAKE:
+            hexagonToTurnToRiver.type = FIELDTYPE.HILL_RIVER_MERGE;
+            break;
+          case FIELDTYPE.RIVER:
+            hexagonToTurnToRiver.type = FIELDTYPE.MERGED_RIVER;
+            break;
+          case FIELDTYPE.HILL:
+            hexagonToTurnToRiver.type = FIELDTYPE.HILL_RIVER;
+            break;
+          default:
+            break;
         }
 
         hexagonToTurnToRiver.parent = selectedHexagon;
+        selectedHexagon.child = hexagonToTurnToRiver;
 
         let parentCount = 0;
         let cursor = hexagonToTurnToRiver;

@@ -1,17 +1,12 @@
 import { FIELDTYPE } from "./hexagon";
 
 export default class ConstraintChecker {
-  checkElevationForNextRiverField(
-    selectedHexagon,
-    selectedFieldToSpawnIsNeighbour
-  ) {
-    console.log("selectedHexagon === ", selectedHexagon.type);
-    console.log(
-      "selectedFieldToTurn === ",
-      selectedFieldToSpawnIsNeighbour.type
-    );
+  constructor(game) {
+    this.game = game;
+  }
 
-    if (selectedFieldToSpawnIsNeighbour.type === FIELDTYPE.FOUNTAIN) {
+  checkElevationForNextRiverField(selectedHexagon, fieldToChange) {
+    if (fieldToChange.type === FIELDTYPE.FOUNTAIN) {
       return false;
     }
 
@@ -20,14 +15,16 @@ export default class ConstraintChecker {
         return true;
       case FIELDTYPE.HILL:
       case FIELDTYPE.HILL_RIVER:
-        return selectedFieldToSpawnIsNeighbour.type !== FIELDTYPE.MOUNTAIN;
+      case FIELDTYPE.HILL_RIVER_MERGE:
+        return fieldToChange.type !== FIELDTYPE.MOUNTAIN;
       case FIELDTYPE.GREEN:
       case FIELDTYPE.RIVER:
       case FIELDTYPE.MERGED_RIVER:
       case FIELDTYPE.WATER:
         return (
-          selectedFieldToSpawnIsNeighbour.type !== FIELDTYPE.MOUNTAIN &&
-          selectedFieldToSpawnIsNeighbour.type !== FIELDTYPE.HILL
+          fieldToChange.type !== FIELDTYPE.MOUNTAIN &&
+          fieldToChange.type !== FIELDTYPE.HILL &&
+          fieldToChange.type !== FIELDTYPE.HILL_RIVER
         );
       default:
         return false;
@@ -35,12 +32,19 @@ export default class ConstraintChecker {
   }
 
   fountainPowerCheck(selectedHexagon) {
-    let fountainDistance = 0;
     let cursor = selectedHexagon;
     while (cursor.parent) {
-      fountainDistance++;
       cursor = cursor.parent;
     }
-    return fountainDistance < 3;
+    let fountainDistance = 0;
+    while (cursor.child) {
+      cursor = cursor.child;
+      fountainDistance++;
+    }
+    if (fountainDistance >= 3) {
+      return false;
+    }
+
+    return true;
   }
 }

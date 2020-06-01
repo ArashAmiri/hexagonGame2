@@ -8,7 +8,8 @@ export const FIELDTYPE = {
   FOUNTAIN: 6,
   LAKE: 7,
   HILL_RIVER: 8,
-  HILL_LAKE: 9
+  HILL_LAKE: 9,
+  HILL_RIVER_MERGE: 10
 };
 
 export const HEXAGON_SIZE = {
@@ -22,6 +23,7 @@ export default class Hexagon {
 
     this.civilization = null;
     this.parent = null;
+    this.child = null;
 
     this.rowIndex = rowIndex;
     this.colIndex = colIndex;
@@ -73,6 +75,9 @@ export default class Hexagon {
         break;
       case FIELDTYPE.HILL_LAKE:
         this.imageName = "hillLakeImage";
+        break;
+      case FIELDTYPE.HILL_RIVER_MERGE:
+        this.imageName = "hillRiverMergeImage";
         break;
       default:
         this.imageName = "greenImage";
