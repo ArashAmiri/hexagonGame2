@@ -157,6 +157,7 @@ export default class Game {
   handleMouseClick(hexagonToTurnToRiver) {
     if (this.gamestate === GAME_STATE.SELECT_MODE) {
       hexagonToTurnToRiver.isSelected = true;
+      console.log(hexagonToTurnToRiver.fountains);
     }
 
     if (this.gamestate === GAME_STATE.SPAWN_RIVER_MODE) {
@@ -201,7 +202,8 @@ export default class Game {
         fountainHasPower &&
         !hasAlreadyRiver &&
         !hexagonToTurnHasSameParent &&
-        selectedFieldToSpawnIsNeighbour
+        selectedFieldToSpawnIsNeighbour &&
+        !selectedHexagon.child
       ) {
         if (selectedHexagon.type === FIELDTYPE.MOUNTAIN) {
           selectedHexagon.type = FIELDTYPE.FOUNTAIN;
@@ -227,9 +229,37 @@ export default class Game {
             break;
         }
 
+        let cursor = hexagonToTurnToRiver;
+        while (cursor) {
+          cursor.fountains.push(...selectedHexagon.fountains);
+          cursor = cursor.child;
+        }
+
+        for (let fountain of hexagonToTurnToRiver.fountains) {
+          if (fountain.waterPower > 0) {
+            fountain.waterPower--;
+            break;
+          }
+        }
+
+        let hasWaterPower = this.constraintChecker.fountainPowerCheck(
+          hexagonToTurnToRiver
+        );
         hexagonToTurnToRiver.parent = selectedHexagon;
         selectedHexagon.child = hexagonToTurnToRiver;
 
+        /*
+        if (!hasWaterPower) {
+          if (hexagonToTurnToRiver.type === FIELDTYPE.RIVER) {
+            hexagonToTurnToRiver.type = FIELDTYPE.LAKE;
+          }
+          if (hexagonToTurnToRiver.type === FIELDTYPE.HILL_RIVER) {
+            hexagonToTurnToRiver.type = FIELDTYPE.HILL_LAKE;
+          }
+        }
+        */
+
+        /*
         let parentCount = 0;
         let cursor = hexagonToTurnToRiver;
         while (cursor.parent) {
@@ -244,6 +274,7 @@ export default class Game {
             hexagonToTurnToRiver.type = FIELDTYPE.HILL_LAKE;
           }
         }
+        */
       }
 
       hexagonToTurnToRiver.initImage();

@@ -14,14 +14,12 @@ export default class ConstraintChecker {
       selectedHexagonParents.push(cursor.parent);
       cursor = cursor.parent;
     }
-    console.log(selectedHexagonParents);
 
     cursor = fieldToChange;
     while (cursor.parent) {
       fieldToChangeParents.push(cursor.parent);
       cursor = cursor.parent;
     }
-    console.log(fieldToChangeParents);
 
     const found =
       selectedHexagonParents.some(value =>
@@ -64,6 +62,11 @@ export default class ConstraintChecker {
   }
 
   fountainPowerCheck(selectedHexagon) {
+    let fountainsWithPower = selectedHexagon.fountains.filter(
+      f => f.waterPower > 0
+    );
+    return fountainsWithPower.length > 0;
+    /*
     let cursor = selectedHexagon;
     while (cursor.parent) {
       cursor = cursor.parent;
@@ -78,5 +81,6 @@ export default class ConstraintChecker {
     }
 
     return true;
+    */
   }
 }

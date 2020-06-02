@@ -21,8 +21,15 @@ export default class Hexagon {
   constructor(posx, posy, type, rowIndex, colIndex) {
     this.population = 0;
 
+    if (type === FIELDTYPE.MOUNTAIN) {
+      this.waterPower = 3;
+      this.fountains = [this];
+    } else {
+      this.waterPower = 0;
+      this.fountains = [];
+    }
+
     this.civilization = null;
-    this.parent = null;
     this.child = null;
 
     this.rowIndex = rowIndex;
