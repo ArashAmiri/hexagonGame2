@@ -122,7 +122,7 @@ export default class Game {
     this.hexagons.forEach(hex => {
       hex.update(deltaTime);
 
-      this.globalAlpha += deltaTime / 20000;
+      this.globalAlpha += deltaTime / 80000;
       if (this.globalAlpha > 4) {
         this.globalAlpha = 0;
       }
