@@ -13,9 +13,16 @@ const ROW_SIZE = 10;
 const MAX_WATER_FIELD_COUNT = 10;
 const CIVILIZATION_LIMIT = 20;
 
+const RIVER_ELEMENT_RADIUS = 50;
+
 export default class Game {
   constructor(gameWidth, gameHeight) {
     this.menuCanvas = document.getElementById("menuScreen");
+
+    this.globalAlpha = 0;
+
+    this.alphaForRiverElement = 1;
+    this.alphaCounter = 1;
 
     this.gameWidth = gameWidth;
     this.gameHeight = gameHeight;
@@ -27,6 +34,8 @@ export default class Game {
     this.determineNeighbours();
 
     this.constraintChecker = new ConstraintChecker(this);
+
+    this.riverElementImage = document.getElementById("riverElementImage");
 
     new InputHandler(this);
   }
@@ -75,7 +84,7 @@ export default class Game {
         waterFieldCount++;
       }
 
-      let hex = new Hexagon(hexagonX, hexagonY, type, rowCount, colCount);
+      let hex = new Hexagon(hexagonX, hexagonY, type, rowCount, colCount, this);
       this.hexagons.push(hex);
       colCount++;
       if (i != 0 && i % ROW_SIZE === 0) {
@@ -113,6 +122,11 @@ export default class Game {
     this.hexagons.forEach(hex => {
       hex.update(deltaTime);
 
+      this.globalAlpha += deltaTime / 20000;
+      if (this.globalAlpha > 4) {
+        this.globalAlpha = 0;
+      }
+      this.alphaForRiverElement = Math.floor(this.globalAlpha);
       /*
       let populationSum = hex.population;
       hex.neighbours.forEach(
@@ -134,9 +148,53 @@ export default class Game {
     });
   }
 
+  calcMidpoint(pointA, pointB) {
+    return {
+      x: (pointA.x + pointB.x) / 2,
+      y: (pointA.y + pointB.y) / 2
+    };
+  }
+
   draw(ctx) {
     ctx.clearRect(this.submenuX, this.submenuY, 100, 100);
-    this.hexagons.forEach(obj => obj.draw(ctx));
+    this.hexagons.forEach(hex => hex.draw(ctx));
+
+    this.hexagons.forEach(hex => {
+      let riverHexs = hex.neighbours.filter(nhex => nhex.child === hex);
+      riverHexs.forEach(rhex => {
+        let startPoint = hex.position;
+        let endPoint = rhex.position;
+        let middlePoint = this.calcMidpoint(startPoint, endPoint);
+        let preMiddlePoint = this.calcMidpoint(startPoint, middlePoint);
+        let postMiddlePoint = this.calcMidpoint(middlePoint, endPoint);
+
+        let points = [
+          endPoint,
+          postMiddlePoint,
+          middlePoint,
+          preMiddlePoint,
+          startPoint
+        ];
+
+        for (let i = 0; i < points.length; i++) {
+          let point = points[i];
+          if (this.alphaForRiverElement === i) {
+            ctx.globalAlpha = 0.9;
+          } else {
+            ctx.globalAlpha = 0.4;
+          }
+
+          ctx.drawImage(
+            this.riverElementImage,
+            point.x,
+            point.y,
+            RIVER_ELEMENT_RADIUS,
+            RIVER_ELEMENT_RADIUS
+          );
+          ctx.globalAlpha = 1;
+        }
+      });
+    });
   }
 
   spawnRiver() {

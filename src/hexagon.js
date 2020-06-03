@@ -18,7 +18,8 @@ export const HEXAGON_SIZE = {
 };
 
 export default class Hexagon {
-  constructor(posx, posy, type, rowIndex, colIndex) {
+  constructor(posx, posy, type, rowIndex, colIndex, game) {
+    this.game = game;
     this.population = 0;
 
     if (type === FIELDTYPE.MOUNTAIN) {
@@ -109,6 +110,15 @@ export default class Hexagon {
     }
   }
 
+  calcProjectedRectSizeOfRotatedRect(size, rad) {
+    const { width, height } = size;
+    const rectProjectedWidth =
+      Math.abs(width * Math.cos(rad)) + Math.abs(height * Math.sin(rad));
+    const rectProjectedHeight =
+      Math.abs(width * Math.sin(rad)) + Math.abs(height * Math.cos(rad));
+    return { width: rectProjectedWidth, height: rectProjectedHeight };
+  }
+
   draw(ctx) {
     ctx.drawImage(
       this.image,
@@ -120,6 +130,17 @@ export default class Hexagon {
 
     ctx.fillStyle = "#f00";
 
+    if (this.waterPower > 0) {
+      ctx.font = "10px Arial";
+      ctx.fillStyle = "aqua";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        Math.floor(this.waterPower),
+        this.position.x + this.width / 2,
+        this.position.y + (this.height / 3) * 2
+      );
+    }
+
     if (this.population === 0) return;
 
     if (!this.civilization) {
@@ -128,8 +149,8 @@ export default class Hexagon {
       ctx.textAlign = "center";
       ctx.fillText(
         Math.floor(this.population),
-        this.position.x + this.width / 2,
-        this.position.y + this.height / 2
+        this.position.x + this.width / 3,
+        this.position.y + this.height / 3
       );
     } else {
       if (this.civilization.centerHexagon === this) {
@@ -138,8 +159,8 @@ export default class Hexagon {
         ctx.textAlign = "center";
         ctx.fillText(
           Math.floor(this.civilization.population),
-          this.position.x + this.width / 2,
-          this.position.y + this.height / 2
+          this.position.x + this.width / 3,
+          this.position.y + this.height / 3
         );
       }
     }
